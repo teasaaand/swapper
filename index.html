@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>양방향 선택 치환기</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+      margin: 0;
+      background-color: #f9f9f9;
+    }
+
+    h1 {
+      text-align: center;
+    }
+
+    textarea, input[type="text"], input[list] {
+      width: 100%;
+      box-sizing: border-box;
+      font-size: 1em;
+      margin: 10px 0;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+
+    .pair {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .pair input[type="text"],
+    .pair input[list] {
+      flex: 1;
+      min-width: 0;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      font-size: 1em;
+      border: none;
+      border-radius: 8px;
+      background-color: #4CAF50;
+      color: white;
+      cursor: pointer;
+      margin-bottom: 10px;
+    }
+
+    button:hover {
+      background-color: #45a049;
+    }
+
+    .clear-button {
+      background-color: #f5deb3;
+      color: black;
+    }
+
+    .clear-button:hover {
+      background-color: #f5dfbf;
+    }
+  </style>
+</head>
+<body>
+  <h1>양방향 선택 치환기</h1>
+
+  <div class="pair">
+    <input id="from1" list="options1" placeholder="예: Sun">
+    <datalist id="options1">
+      <option value="char">
+      <option value="user">
+    </datalist>
+    <input id="to1" type="text" placeholder="예: Moon">
+    <label><input id="swap1" type="checkbox">양방향</label>
+  </div>
+
+  <div class="pair">
+    <input id="from2" list="options2" placeholder="예: Sun">
+    <datalist id="options2">
+      <option value="char">
+      <option value="user">
+    </datalist>
+    <input id="to2" type="text" placeholder="예: Dog">
+    <label><input id="swap2" type="checkbox">양방향</label>
+  </div>
+
+  <textarea id="input" rows="6" placeholder="원본 텍스트 입력"></textarea>
+  <button onclick="convert()">변환하기</button>
+  <button class="clear-button" onclick="clearInput()">입력 지우기</button>
+  <textarea id="output" rows="6" readonly placeholder="결과 출력"></textarea>
+  <button onclick="copyOutput()">복사하기</button>
+
+  <script>
+    function escapeRegExp(string) {
+      return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    function convert() {
+      const pairs = [];
+
+      const from1 = document.getElementById("from1").value.trim();
+      const to1 = document.getElementById("to1").value.trim();
+      const swap1 = document.getElementById("swap1").checked;
+
+      const from2 = document.getElementById("from2").value.trim();
+      const to2 = document.getElementById("to2").value.trim();
+      const swap2 = document.getElementById("swap2").checked;
+
+      if (from1 && to1) {
+        const variants = [`{{${from1}}}`, `<${from1}>`];
+        variants.forEach(f => {
+          pairs.push({ from: f, to: to1 });
+          if (swap1) pairs.push({ from: to1, to: f });
+        });
+      }
+
+      if (from2 && to2) {
+        const variants = [`{{${from2}}}`, `<${from2}>`];
+        variants.forEach(f => {
+          pairs.push({ from: f, to: to2 });
+          if (swap2) pairs.push({ from: to2, to: f });
+        });
+      }
+
+      const TEMP_PREFIX = "__TEMP__";
+      const uniqueID = Date.now();
+      const tempMap = {};
+      let result = document.getElementById("input").value;
+
+      // Step 1: from → temp
+      pairs.forEach((pair, i) => {
+        const token = TEMP_PREFIX + i + "_" + uniqueID;
+        tempMap[token] = pair.to;
+        result = result.replace(new RegExp(escapeRegExp(pair.from), "gi"), token);
+      });
+
+      // Step 2: temp → to
+      Object.entries(tempMap).forEach(([token, to]) => {
+        result = result.replace(new RegExp(token, "g"), to);
+      });
+
+      document.getElementById("output").value = result;
+    }
+
+    function clearInput() {
+      document.getElementById("input").value = "";
+    }
+
+    function copyOutput() {
+      const output = document.getElementById("output");
+      output.select();
+      output.setSelectionRange(0, 99999);
+      document.execCommand("copy");
+    }
+  </script>
+</body>
+</html>

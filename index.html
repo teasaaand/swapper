@@ -66,7 +66,7 @@
   </style>
 </head>
 <body>
-  <h1>양방향 선택 치환기</h1>
+  <h1>선택 치환기</h1>
 
   <div class="pair">
     <input id="from1" list="options1" placeholder="예: Sun">
@@ -75,7 +75,6 @@
       <option value="user">
     </datalist>
     <input id="to1" type="text" placeholder="예: Moon">
-    <label><input id="swap1" type="checkbox">양방향</label>
   </div>
 
   <div class="pair">
@@ -85,7 +84,6 @@
       <option value="user">
     </datalist>
     <input id="to2" type="text" placeholder="예: Dog">
-    <label><input id="swap2" type="checkbox">양방향</label>
   </div>
 
   <textarea id="input" rows="6" placeholder="원본 텍스트 입력"></textarea>
@@ -104,17 +102,13 @@
 
       const from1 = document.getElementById("from1").value.trim();
       const to1 = document.getElementById("to1").value.trim();
-      const swap1 = document.getElementById("swap1").checked;
-
       const from2 = document.getElementById("from2").value.trim();
       const to2 = document.getElementById("to2").value.trim();
-      const swap2 = document.getElementById("swap2").checked;
 
       if (from1 && to1) {
         const variants = [`{{${from1}}}`, `<${from1}>`];
         variants.forEach(f => {
           pairs.push({ from: f, to: to1 });
-          if (swap1) pairs.push({ from: to1, to: f });
         });
       }
 
@@ -122,27 +116,14 @@
         const variants = [`{{${from2}}}`, `<${from2}>`];
         variants.forEach(f => {
           pairs.push({ from: f, to: to2 });
-          if (swap2) pairs.push({ from: to2, to: f });
         });
       }
 
-      const TEMP_PREFIX = "__TEMP__";
-      const uniqueID = Date.now();
-      const tempMap = {};
       let result = document.getElementById("input").value;
 
-      // Step 1: from → temp
-      pairs.forEach((pair, i) => {
-        const token = TEMP_PREFIX + i + "_" + uniqueID;
-        tempMap[token] = pair.to;
-        result = result.replace(new RegExp(escapeRegExp(pair.from), "gi"), token);
-      });
-
-      // Step 2: temp → to
-      Object.entries(tempMap).forEach(([token, to]) => {
-        result = result.replace(new RegExp(token, "g"), to);
-      });
-
+pairs.forEach(pair => {
+  result = result.replace(new RegExp(escapeRegExp(pair.from), "gi"), pair.to);
+});
       document.getElementById("output").value = result;
     }
 

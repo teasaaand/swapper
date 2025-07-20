@@ -63,6 +63,27 @@
     .clear-button:hover {
       background-color: #f5dfbf;
     }
+    #history {
+      margin-top: 20px;
+    }
+
+    .history-item {
+     padding: 8px;
+     cursor: pointer;
+     font-size: 0.9em;
+     color: #606060
+    }
+    .history-item:not(:first-child) {
+     border-top: 1px solid #606060;
+   }
+    .history-item:hover {
+     background-color: #ddd;
+    }
+    .star-icon {
+     font-size: 1.2em;
+     cursor: pointer;
+    }
+
   </style>
 </head>
 <body>
@@ -91,52 +112,91 @@
   <button class="clear-button" onclick="clearInput()">입력 지우기</button>
   <textarea id="output" rows="6" readonly placeholder="결과 출력"></textarea>
   <button onclick="copyOutput()">복사하기</button>
+  <h2>최근 변환 결과</h2>
+  <div id="history"></div>
+
 
   <script>
     function escapeRegExp(string) {
-      return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     }
 
     function convert() {
-      const pairs = [];
+        const pairs = [];
 
-      const from1 = document.getElementById("from1").value.trim();
-      const to1 = document.getElementById("to1").value.trim();
-      const from2 = document.getElementById("from2").value.trim();
-      const to2 = document.getElementById("to2").value.trim();
+        const from1 = document.getElementById("from1").value.trim();
+        const to1 = document.getElementById("to1").value.trim();
+        const from2 = document.getElementById("from2").value.trim();
+        const to2 = document.getElementById("to2").value.trim();
 
-      if (from1 && to1) {
-        const variants = [`{{${from1}}}`, `<${from1}>`];
-        variants.forEach(f => {
-          pairs.push({ from: f, to: to1 });
+        if (from1 && to1) {
+            const variants = [`{{${from1}}}`, `<${from1}>`];
+            variants.forEach(f => {
+                pairs.push({ from: f, to: to1 });
+            });
+        }
+
+        if (from2 && to2) {
+            const variants = [`{{${from2}}}`, `<${from2}>`];
+            variants.forEach(f => {
+                pairs.push({ from: f, to: to2 });
+            });
+        }
+
+        let result = document.getElementById("input").value;
+
+        pairs.forEach(pair => {
+            result = result.replace(new RegExp(escapeRegExp(pair.from), "gi"), pair.to);
         });
-      }
 
-      if (from2 && to2) {
-        const variants = [`{{${from2}}}`, `<${from2}>`];
-        variants.forEach(f => {
-          pairs.push({ from: f, to: to2 });
-        });
-      }
-
-      let result = document.getElementById("input").value;
-
-pairs.forEach(pair => {
-  result = result.replace(new RegExp(escapeRegExp(pair.from), "gi"), pair.to);
-});
-      document.getElementById("output").value = result;
+        document.getElementById("output").value = result;
+        updateHistory(result);
     }
 
     function clearInput() {
-      document.getElementById("input").value = "";
+        document.getElementById("input").value = "";
     }
 
     function copyOutput() {
-      const output = document.getElementById("output");
-      output.select();
-      output.setSelectionRange(0, 99999);
-      document.execCommand("copy");
+        const output = document.getElementById("output");
+        output.select();
+        output.setSelectionRange(0, 99999);
+        document.execCommand("copy");
     }
-  </script>
+
+    const history = [];
+
+    function updateHistory(result) {
+        history.unshift(result); // 가장 앞에 추가
+        if (history.length > 3) history.pop(); // 3개 초과 시 삭제
+        renderHistory();
+    }
+
+    function renderHistory() {
+        const historyDiv = document.getElementById("history");
+        historyDiv.innerHTML = "";
+
+        history.forEach((item, index) => {
+            const div = document.createElement("div");
+            div.className = "history-item";
+            const text = document.createElement("span");
+            text.textContent = `${item.substring(0, 50)}${item.length > 50 ? "..." : ""}`;
+            text.style.flex = "1";
+            div.onclick = async () => {
+                try {
+                    await navigator.clipboard.writeText(item);
+                    alert("복사 완료!");
+                } catch (err) {
+                    console.error("복사 실패:", err);
+                    alert("복사에 실패했어요. 브라우저가 구식일 수도...");
+                }
+            };
+            div.appendChild(text);
+            historyDiv.appendChild(div);
+        });
+}
+
+</script>
+
 </body>
 </html>
